@@ -44,6 +44,20 @@ def lum(col):
     return r + g + b
 
 
+def match_brightness(fixed, moving):
+    """returns moving renormalized to have fixed's norm"""
+    rf, gf, bf = rgb_to_int(fixed)
+    rm, gm, bm = rgb_to_int(moving)
+    # No squaring because negative colors don't exist.
+    fnorm = rf + gf + bf
+    rnorm = rm + gm + bm
+    if rnorm == 0:
+        return moving
+    slope = fnorm / rnorm
+    return rgb_to_str(clamp(int(rm * slope)),
+                      clamp(int(gm * slope)), clamp(int(bm * slope)))
+
+
 def lum_dist(col1, col2):
     r1, g1, b1 = rgb_to_int(col1)
     r2, g2, b2 = rgb_to_int(col2)
@@ -143,19 +157,19 @@ def n_min(array, key, n):
     return array[:n]
 
 
-
 def mix_colors(colors):
     """takes is an array of strings [AABBCC, 123456, ...]
     and outputs them overlaid on COLORSCHEME"""
     colors = remove_hashes(colors)
     results = []
     for base in COLORSCHEME:
-        closecols = n_min(colors, lambda x: colratio_dist(x, base) +
-                          lum_dist(x, base), NUM_ADJACENCIES)
+        closecols = n_min(colors,
+                          lambda x: colratio_dist(x, base), NUM_ADJACENCIES)
         newcol = base
         for i in range(NUM_ADJACENCIES):
             newcol = average_cols(closecols[i], newcol, min(1, WEIGHTS[i]
                                   * colratio_dist(base, closecols[i])))
+            newcol = match_brightness(base, newcol)
         results.append(newcol)
     for col in results:
         print("#"+col)
@@ -172,20 +186,6 @@ def affect_color(col1, colors, threshold):
             # To prevent that "Mixing paint until brown" effect.
             col1 = average_cols(col1, col2, .5)
     return col1
-
-
-def match_brightness(fixed, moving):
-    """returns moving renormalized to have fixed's norm"""
-    rf, gf, bf = rgb_to_int(fixed)
-    rm, gm, bm = rgb_to_int(moving)
-    # No squaring because negative colors don't exist.
-    fnorm = rf + gf + bf
-    rnorm = rm + gm + bm
-    if rnorm == 0:
-        return moving
-    slope = fnorm / rnorm
-    return rgb_to_str(clamp(int(rm * slope)),
-                      clamp(int(gm * slope)), clamp(int(bm * slope)))
 
 
 def ensure_contrast(color):

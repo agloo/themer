@@ -1,10 +1,23 @@
 # themer
-A collection of scripts aimed at customizing desktops under the KISS principle
+A collection of scripts aimed at customizing desktops under the unix philosophy.
 
-The whole of this repo is definitely still a work in progress. I'll be adding customizations I've made to my own desktop once I feel I've made them modular enough for general purpose use, but don't expect sparkling clean style if you crack one of these open and look at the source code.
+I'll be adding the tools I use whenever they end up polished enough for public use.
 
 ##Scripts:
-  scheme.py- overlay a group of colors over an established color scheme.
+###scheme.py
 
-  For example:
-  ![schemepoc](https://cloud.githubusercontent.com/assets/13296002/19587746/99e1e82a-9715-11e6-9bd3-a4f8e9eb5cba.jpg)
+Overlay a group of colors over an established color scheme.
+
+Requirements: Just python 3. [colors](http://git.2f30.org/colors/log.html) recommended to get a color scheme that matches your wallpaper.
+
+For Example:
+![schemepoc](https://cloud.githubusercontent.com/assets/13296002/19587746/99e1e82a-9715-11e6-9bd3-a4f8e9eb5cba.jpg)
+
+###colormod.py
+
+Manipulate the values of a list of colors, passed in by hex value.
+
+Currently supports a continous series of pairwise gradients, along with lightening/darkening.
+
+For Example:
+![pocgrad](https://cloud.githubusercontent.com/assets/13296002/20338901/75fdba8c-ab8e-11e6-9d75-01818f101eec.jpg)

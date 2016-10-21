@@ -99,6 +99,8 @@ def colratio_dist(col1, col2):
 
 # Utils:
 def rgb_to_int(color):
+    if color[0] == "#":
+        color = color[1:]
     return (int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16))
 
 
@@ -163,7 +165,7 @@ def _ratio_dist(x, y, threshold):
         return colratio_dist(x, y)
 
 
-def mix_colors(colors, weights, num_adj):
+def mix_colors(colors, weights, num_adj, x_out=False):
     """Takes is an array of strings [AABBCC, 123456, ...]
     and outputs them overlaid on COLORSCHEME."""
     colors = remove_hashes(colors)
@@ -178,8 +180,14 @@ def mix_colors(colors, weights, num_adj):
                                   * colratio_dist(base, closecols[i])))
             newcol = match_brightness(base, newcol)
         results.append(newcol)
+    temp = []
     for col in results:
-        print("#"+col)
+        temp.append("#"+col)
+    results = temp
+    if x_out:
+        results = to_xrdb(results)
+    for col in results:
+        print(col)
 
 
 # Appendix: unused scripts which would otherwise
@@ -219,9 +227,11 @@ def separate_colors(fixed, moving, distance):
                       clamp(int(gm + dy)), clamp(int(bm + dz)))
 
 
-def to_xresorces(colors):
+def to_xrdb(colors):
+    rv = []
     for i in range(len(colors)):
-        print("*color{}\t#{}".format(i, colors[i]))
+        rv.append("*color{}:\t#{}".format(i, colors[i]))
+    return rv
 
 
 if __name__ == "__main__":
@@ -240,6 +250,9 @@ if __name__ == "__main__":
                         nargs='?',
                         default=3,
                         help='The rate at which far colors cease to affect each color')
+    parser.add_argument('-x',
+                        action="store_true",
+                        help='Include if you want output to be in Xresources format.')
     parser.add_argument('-f',
                         dest='filename',
                         metavar='f',
@@ -269,4 +282,4 @@ if __name__ == "__main__":
             scheme_lines = [line for line in scheme_lines if line]
             COLORSCHEME = [color[::-1][:6][::-1] for color in scheme_lines]
     colors = [line for line in args.colors]
-    mix_colors(colors, weights, args.num_adj)
+    mix_colors(colors, weights, args.num_adj, args.x)

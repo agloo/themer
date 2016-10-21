@@ -5,3 +5,6 @@ The whole of this repo is definitely still a work in progress. I'll be adding cu
 
 ##Scripts:
   scheme.py- overlay a group of colors over an established color scheme.
+
+  For example:
+  ![schemepoc](https://cloud.githubusercontent.com/assets/13296002/19587746/99e1e82a-9715-11e6-9bd3-a4f8e9eb5cba.jpg)

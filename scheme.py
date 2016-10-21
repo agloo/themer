@@ -156,15 +156,24 @@ def n_min(array, key, n):
     array.sort(key=key)
     return array[:n]
 
+def _ratio_dist(x, y, threshold):
+    """Helper function to be passed as a key to n_min.
+    returns the difference in hue between x and y if their
+    luminance is within threshold."""
+    if lum_dist(x,y) > threshold:
+        return 2048
+    else:
+        return colratio_dist(x, y)
+
 
 def mix_colors(colors):
-    """takes is an array of strings [AABBCC, 123456, ...]
-    and outputs them overlaid on COLORSCHEME"""
+    """Takes is an array of strings [AABBCC, 123456, ...]
+    and outputs them overlaid on COLORSCHEME."""
     colors = remove_hashes(colors)
     results = []
     for base in COLORSCHEME:
         closecols = n_min(colors,
-                          lambda x: colratio_dist(x, base), NUM_ADJACENCIES)
+                          lambda x: _ratio_dist(x, base, THRESHOLD), NUM_ADJACENCIES)
         newcol = base
         for i in range(NUM_ADJACENCIES):
             newcol = average_cols(closecols[i], newcol, min(1, WEIGHTS[i]

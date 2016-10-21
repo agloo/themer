@@ -1,39 +1,35 @@
 #!/usr/bin/env python3
+import argparse
+import re
 import sys
 
-# TWEAK HERE: these are your knobs to fiddle with.
-# This controls how many input colors we average
-# with each color in our color scheme.
-NUM_ADJACENCIES = 3
+# TWEAK HERE: If the command line doesn't give you enough customization,
+# You can mess with the constants here to get an even finer level of control.
 
-# This controls how much weight we give to each color we compare
-# each scheme color with. the averaging is done one-at-a-time
-# and pairwise, so know that there is a cap for how much priority
-# you can give a color, and lower numbers give more priority.
-WEIGHTS = [20, 25, 30]
-
-if len(WEIGHTS) > NUM_ADJACENCIES:
-    print("ERR: WEIGHTS must have NUM_ADJACENCIES elements")
-    exit(1)
-
-# Both of these are used by ensure_contrast. only investigate this
-# if you get colors that blend in with your background.
-COL_FIX_AMT = 5
+# This is used to ensure that dark colors aren't
+# affected by light colors and vice versa.
 THRESHOLD = 0x1550
 
-# These are terminal color schemes from color 0 to color 15.
-# Feel free to add your own! Just change USED_
+# Only investigae this if you get colors
+# that blend in with your background.
+COL_FIX_AMT = 5
+
+# These are terminal color schemes expressed from color 0 to color 15.
+# Feel free to add your own! Just change COLORSCHEME
 # Default color scheme gotten from terminal.sexy
-default = ("282a2e", "a54242", "8c9440", "de935f",
+default = ["282a2e", "a54242", "8c9440", "de935f",
            "5f819d", "85678f", "5e8d87", "707880",
            "373b41", "cc6666", "b5bd68", "f0c674",
-           "81a2be", "b294bb", "8abeb7", "c5c8c6")
-### YOUR COLOR SCHEMES HERE ###
+           "81a2be", "b294bb", "8abeb7", "c5c8c6"]
+
+# ***YOUR COLOR SCHEMES HERE ***
 
 COLORSCHEME = default
 
-background = "0d191d"
-foreground = "d9e6f2"
+# This is your assumed foreground and background. You can use some of the
+# util files to ensure that colors stand out from these.
+BACKGROUND = "0d191d"
+FOREGROUND = "d9e6f2"
 
 
 def lum(col):
@@ -156,27 +152,29 @@ def n_min(array, key, n):
     array.sort(key=key)
     return array[:n]
 
+
 def _ratio_dist(x, y, threshold):
     """Helper function to be passed as a key to n_min.
     returns the difference in hue between x and y if their
     luminance is within threshold."""
-    if lum_dist(x,y) > threshold:
+    if lum_dist(x, y) > threshold:
         return 2048
     else:
         return colratio_dist(x, y)
 
 
-def mix_colors(colors):
+def mix_colors(colors, weights, num_adj):
     """Takes is an array of strings [AABBCC, 123456, ...]
     and outputs them overlaid on COLORSCHEME."""
     colors = remove_hashes(colors)
     results = []
     for base in COLORSCHEME:
         closecols = n_min(colors,
-                          lambda x: _ratio_dist(x, base, THRESHOLD), NUM_ADJACENCIES)
+                          lambda x: _ratio_dist(x, base, THRESHOLD),
+                          num_adj)
         newcol = base
-        for i in range(NUM_ADJACENCIES):
-            newcol = average_cols(closecols[i], newcol, min(1, WEIGHTS[i]
+        for i in range(num_adj):
+            newcol = average_cols(closecols[i], newcol, min(1, weights[i]
                                   * colratio_dist(base, closecols[i])))
             newcol = match_brightness(base, newcol)
         results.append(newcol)
@@ -201,10 +199,10 @@ def ensure_contrast(color):
     """Ensures that the color is at least threshold away from the background
     and moves it COL_FIX_AMT in the opposite direction if it isn't.
     Useful if you're getting too dark/ too light of colors"""
-    r1, g1, b1 = rgb_to_int(background)
+    r1, g1, b1 = rgb_to_int(BACKGROUND)
     r2, g2, b2 = rgb_to_int(color)
-    if coldist(color, background) <= THRESHOLD:
-        return separate_colors(background, color, COL_FIX_AMT)
+    if coldist(color, BACKGROUND) <= THRESHOLD:
+        return separate_colors(BACKGROUND, color, COL_FIX_AMT)
     return color
 
 
@@ -227,4 +225,48 @@ def to_xresorces(colors):
 
 
 if __name__ == "__main__":
-    mix_colors(sys.argv[1:])
+    parser = argparse.ArgumentParser(description='opts')
+    parser.add_argument('-n',
+                        dest='num_adj',
+                        metavar='a',
+                        type=int,
+                        nargs='?',
+                        default=3,
+                        help='Number of colors averaged with each color in the saved color scheme')
+    parser.add_argument('-d',
+                        dest='decay',
+                        metavar='d',
+                        type=int,
+                        nargs='?',
+                        default=3,
+                        help='The rate at which far colors cease to affect each color')
+    parser.add_argument('-f',
+                        dest='filename',
+                        metavar='f',
+                        type=str,
+                        nargs='?',
+                        default=None,
+                        help='Name path to a file that contains a valid 16 color color scheme in xrdb format.\
+                        \nNote that if you have a go-to colorscheme it is easy to hard code it at the top of this script.')
+    parser.add_argument(dest='colors',
+                        nargs=argparse.REMAINDER,
+                        type=str,
+                        help='List of colors to overlay on the image')
+    args = parser.parse_args()
+    weights = [15 + args.decay * i for i in range(args.num_adj)]
+    if args.filename:
+        with open(args.filename) as f:
+            lines = f.read().split("\n")
+            scheme_lines = []
+            for i in range(16):
+                pattern = re.compile(".*color{}:".format(i))
+                matches = [line for line in lines if pattern.match(line)]
+                if not matches:
+                    print("Incomplete color scheme. Make sure your file has all 16 colors in valid format.")
+                    exit(0)
+                scheme_lines.append(matches[0])
+            # Filter out empty lines:
+            scheme_lines = [line for line in scheme_lines if line]
+            COLORSCHEME = [color[::-1][:6][::-1] for color in scheme_lines]
+    colors = [line for line in args.colors]
+    mix_colors(colors, weights, args.num_adj)

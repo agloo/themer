@@ -226,6 +226,19 @@ def separate_colors(fixed, moving, distance):
     return rgb_to_str(clamp(int(rm + dx)),
                       clamp(int(gm + dy)), clamp(int(bm + dz)))
 
+def separate_colors_dual(col1, col2, distance):
+    """Moves col1 and col2 distance away in their respective directions.
+    This entails finding the slope between the 2 colors
+    in each dimension and following it."""
+    # TODO: finish this
+    rf, gf, bf = rgb_to_int(fixed)
+    rm, gm, bm = rgb_to_int(moving)
+    dx = (rm - rf) * distance
+    dy = (gm - gf) * distance
+    dz = (bm - bf) * distance
+    return rgb_to_str(clamp(int(rm + dx)),
+                      clamp(int(gm + dy)), clamp(int(bm + dz)))
+
 
 def to_xrdb(colors):
     rv = []
@@ -235,6 +248,7 @@ def to_xrdb(colors):
 
 
 if __name__ == "__main__":
+    # Argument parsing:
     parser = argparse.ArgumentParser(description='opts')
     parser.add_argument('-n',
                         dest='num_adj',
@@ -266,6 +280,7 @@ if __name__ == "__main__":
                         type=str,
                         help='List of colors to overlay on the image')
     args = parser.parse_args()
+
     weights = [15 + args.decay * i for i in range(args.num_adj)]
     if args.filename:
         with open(args.filename) as f:
